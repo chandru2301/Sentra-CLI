@@ -48,26 +48,32 @@ def check_large_diffs(changed_files: List[str], diff_data: Dict) -> Dict:
             if chunk_size > 20:  # Only count substantial chunks
                 chunk_sizes.append(chunk_size)
     
-    # If many similar-sized large chunks, might be AI-generated
+    # If many similar-sized large chunks, detect AI-style patterns
     if len(chunk_sizes) > 5:
         avg_chunk = sum(chunk_sizes) / len(chunk_sizes)
         # Check if chunks are similar in size (within 20% of average)
         similar_chunks = sum(1 for size in chunk_sizes if abs(size - avg_chunk) / avg_chunk < 0.2)
         if similar_chunks > 5:
-            reasons.append("Repeated patterns detected (possible AI-generated changes)")
+            reasons.append("Repeated patterns detected (AI-style diff pattern)")
     
     if reasons:
         return {
             "triggered": True,
-            "risk": "MEDIUM",
+            "rule_id": "LARGE_DIFF",
+            "severity": "MEDIUM",
+            "message": "; ".join(reasons),
             "files": changed_files,
+            "risk": "MEDIUM",
             "reason": "; ".join(reasons)
         }
     
     return {
         "triggered": False,
-        "risk": "LOW",
+        "rule_id": "LARGE_DIFF",
+        "severity": "LOW",
+        "message": None,
         "files": [],
+        "risk": "LOW",
         "reason": None
     }
 

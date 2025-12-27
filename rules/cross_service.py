@@ -78,15 +78,21 @@ def check_cross_service(changed_files: List[str], diff_data: Dict) -> Dict:
     if reasons:
         return {
             "triggered": True,
-            "risk": "MEDIUM",
+            "rule_id": "CROSS_SERVICE",
+            "severity": "MEDIUM",
+            "message": "; ".join(reasons),
             "files": changed_files,
+            "risk": "MEDIUM",
             "reason": "; ".join(reasons)
         }
     
     return {
         "triggered": False,
-        "risk": "LOW",
+        "rule_id": "CROSS_SERVICE",
+        "severity": "LOW",
+        "message": None,
         "files": [],
+        "risk": "LOW",
         "reason": None
     }
 

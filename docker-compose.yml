@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  sentra:
+    build: .
+    image: sentra:latest
+    volumes:
+      - .:/scan
+    working_dir: /scan
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - AI_ESCALATOR_ENABLED=${AI_ESCALATOR_ENABLED:-false}
+      - AI_ESCALATOR_MODEL=${AI_ESCALATOR_MODEL:-mistralai/devstral-2-2512:free}
+      - AI_ESCALATOR_TIMEOUT=${AI_ESCALATOR_TIMEOUT:-5}
+    command: scan --base main
+    stdin_open: true
+    tty: true
+

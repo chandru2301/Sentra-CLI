@@ -102,15 +102,21 @@ def check_infra_changes(changed_files: List[str], diff_data: Dict) -> Dict:
         
         return {
             "triggered": True,
-            "risk": "HIGH",
+            "rule_id": "INFRA_CHANGE",
+            "severity": "HIGH",
+            "message": "; ".join(reasons),
             "files": matched_files,
+            "risk": "HIGH",
             "reason": "; ".join(reasons)
         }
     
     return {
         "triggered": False,
-        "risk": "LOW",
+        "rule_id": "INFRA_CHANGE",
+        "severity": "LOW",
+        "message": None,
         "files": [],
+        "risk": "LOW",
         "reason": None
     }
 

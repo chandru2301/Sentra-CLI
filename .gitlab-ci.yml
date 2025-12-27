@@ -1,0 +1,16 @@
+sentra_scan:
+  image: python:3.10
+  stage: test
+  variables:
+    AI_ESCALATOR_ENABLED: "true"
+    AI_ESCALATOR_MODEL: "mistralai/devstral-2-2512:free"
+    AI_ESCALATOR_TIMEOUT: "5"
+  before_script:
+    - pip install sentra
+  script:
+    - sentra scan --base ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-main}
+  only:
+    - merge_requests
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+

@@ -1,0 +1,28 @@
+version: 1
+
+defaults:
+  allow_severity: LOW
+  block_severity: HIGH
+
+paths:
+  auth/:
+    block_severity: MEDIUM
+
+  config/:
+    block_severity: MEDIUM
+
+  infra/:
+    block_severity: LOW
+
+branches:
+  protected:
+    - main
+    - release/*
+
+rules:
+  INFRA_CHANGE:
+    always_block: true
+
+  TEST_COVERAGE:
+    max_allowed_severity: MEDIUM
+

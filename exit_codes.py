@@ -2,18 +2,17 @@
 from typing import Dict
 
 
-def get_exit_code(risk_level: str) -> int:
-    """Map risk level to exit code.
+def get_exit_code(decision: str) -> int:
+    """Map decision to exit code.
     
     Exit codes:
-    0 - Safe (LOW risk)
-    1 - Warning (MEDIUM risk)
-    2 - Block (HIGH risk)
+    0 - Safe (ALLOW or WARN)
+    1 - Block (BLOCK decision)
     """
     mapping = {
-        "LOW": 0,
-        "MEDIUM": 1,
-        "HIGH": 2,
+        "ALLOW": 0,
+        "WARN": 0,
+        "BLOCK": 1,
     }
-    return mapping.get(risk_level, 1)
+    return mapping.get(decision, 0)
 

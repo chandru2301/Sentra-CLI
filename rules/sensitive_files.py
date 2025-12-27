@@ -52,18 +52,29 @@ def check_sensitive_files(changed_files: List[str], diff_data: Dict) -> Dict:
         if len(matched_files) > 1:
             risk_level = "HIGH"
         
+        # Map risk to severity
+        severity_map = {"LOW": "LOW", "MEDIUM": "MEDIUM", "HIGH": "HIGH"}
+        severity = severity_map.get(risk_level, "MEDIUM")
+        
         return {
             "triggered": True,
-            "risk": risk_level,
+            "rule_id": "SENSITIVE_FILES",
+            "severity": severity,
+            "message": f"Modified sensitive files: {', '.join(matched_files[:3])}" + 
+                      (f" and {len(matched_files) - 3} more" if len(matched_files) > 3 else ""),
             "files": matched_files,
+            "risk": risk_level,  # Keep for backward compatibility during transition
             "reason": f"Modified sensitive files: {', '.join(matched_files[:3])}" + 
                      (f" and {len(matched_files) - 3} more" if len(matched_files) > 3 else "")
         }
     
     return {
         "triggered": False,
-        "risk": "LOW",
+        "rule_id": "SENSITIVE_FILES",
+        "severity": "LOW",
+        "message": None,
         "files": [],
+        "risk": "LOW",
         "reason": None
     }
 

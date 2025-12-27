@@ -1,0 +1,32 @@
+name: "Sentra"
+description: "Policy-based merge gate for pull requests"
+
+inputs:
+  base_branch:
+    description: "Base branch to compare against"
+    required: false
+    default: "main"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Install sentra
+      run: |
+        pip install sentra
+      shell: bash
+
+    - name: Run Sentra Scan
+      env:
+        OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        AI_ESCALATOR_ENABLED: ${{ secrets.AI_ESCALATOR_ENABLED || 'false' }}
+        AI_ESCALATOR_MODEL: ${{ secrets.AI_ESCALATOR_MODEL || 'mistralai/devstral-2-2512:free' }}
+        AI_ESCALATOR_TIMEOUT: ${{ secrets.AI_ESCALATOR_TIMEOUT || '5' }}
+      run: |
+        sentra scan --base ${{ inputs.base_branch }}
+      shell: bash
+

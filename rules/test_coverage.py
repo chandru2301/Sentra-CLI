@@ -55,15 +55,21 @@ def check_test_coverage(changed_files: List[str], diff_data: Dict) -> Dict:
     if production_files and not test_files:
         return {
             "triggered": True,
-            "risk": "MEDIUM",
+            "rule_id": "TEST_COVERAGE",
+            "severity": "MEDIUM",
+            "message": f"Production code changed ({len(production_files)} files) but no test files updated",
             "files": production_files,
+            "risk": "MEDIUM",
             "reason": f"Production code changed ({len(production_files)} files) but no test files updated"
         }
     
     return {
         "triggered": False,
-        "risk": "LOW",
+        "rule_id": "TEST_COVERAGE",
+        "severity": "LOW",
+        "message": None,
         "files": [],
+        "risk": "LOW",
         "reason": None
     }
 
