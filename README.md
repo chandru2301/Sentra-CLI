@@ -1,4 +1,4 @@
-# Sentra
+# Sentra CLI
 
 A CLI tool that analyzes git diffs and decides whether a PR is safe to merge.
 
