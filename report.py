@@ -45,7 +45,9 @@ def generate_pr_comment(
     confidence: float,
     reasons: List[Dict],
     metadata: Dict,
-    confidence_breakdown: Optional[List[str]] = None
+    confidence_breakdown: Optional[List[str]] = None,
+    license_tier: Optional[str] = None,
+    original_decision: Optional[str] = None
 ) -> str:
     """Generate perfect PR comment format for three audiences.
     
@@ -148,7 +150,24 @@ def generate_pr_comment(
     elif decision == "WARN":
         lines.append("- This change is **allowed to merge**")
         lines.append("- Reviewer attention is **recommended**")
-        if reasons:
+        
+        # Show upgrade message if this was downgraded from BLOCK due to Free tier
+        if original_decision == "BLOCK":
+            lines.append("")
+            lines.append("---")
+            lines.append("")
+            lines.append("### 💡 Upgrade Notice")
+            lines.append("")
+            lines.append("**Original Decision:** BLOCK")
+            lines.append("**Result:** Merge blocked by Sentra policy")
+            lines.append("")
+            lines.append("⚠️ **BLOCK enforcement requires Pro tier.**")
+            lines.append("")
+            lines.append("Upgrade to Pro tier to enable merge blocking for policy violations.")
+            lines.append("")
+            lines.append("---")
+            lines.append("")
+        elif reasons:
             # Provide actionable guidance based on first reason
             first_rule = reasons[0].get("rule_id", "")
             if "TEST_COVERAGE" in first_rule:

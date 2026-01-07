@@ -1,20 +1,48 @@
-name: Sentra
+name: Sentra Policy Check
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
+  push:
     branches:
       - main
-      - develop
+      - release/*
 
 jobs:
   sentra:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch full history for branch comparison
+          fetch-depth: 0   # REQUIRED for git diff
 
-      - uses: ./.github/actions/sentra
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          base_branch: ${{ github.base_ref || 'main' }}
+          python-version: "3.11"
 
+      - name: Install Sentra
+        run: pip install sentra
+
+      - name: Run Sentra scan
+        id: sentra
+        env:
+          SENTRA_LICENSE_KEY: ${{ secrets.SENTRA_LICENSE_KEY }}
+        run: |
+          sentra scan --json > sentra-result.json
+          cat sentra-result.json
+
+      - name: Enforce Sentra decision
+        run: |
+          DECISION=$(jq -r '.decision' sentra-result.json)
+
+          echo "Sentra decision: $DECISION"
+
+          if [ "$DECISION" = "BLOCK" ]; then
+            echo "❌ Sentra blocked this change"
+            exit 1
+          fi
+
+          echo "✅ Sentra check passed"

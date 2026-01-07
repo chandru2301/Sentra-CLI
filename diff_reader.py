@@ -17,27 +17,33 @@ class DiffReader:
                 ["git", "diff", f"{self.base_branch}..HEAD"],
                 capture_output=True,
                 text=True,
+                encoding='utf-8',
+                errors='replace',
                 check=True
             )
-            return result.stdout
+            return result.stdout or ""
         except subprocess.CalledProcessError as e:
             # Fallback to staged changes if branch comparison fails
             result = subprocess.run(
                 ["git", "diff", "--cached"],
                 capture_output=True,
-                text=True
+                text=True,
+                encoding='utf-8',
+                errors='replace'
             )
             if result.returncode != 0:
                 # Check if we're in a git repo
                 check_repo = subprocess.run(
                     ["git", "rev-parse", "--git-dir"],
                     capture_output=True,
-                    text=True
+                    text=True,
+                    encoding='utf-8',
+                    errors='replace'
                 )
                 if check_repo.returncode != 0:
                     raise RuntimeError("Not a git repository. Please run this command from a git repository.")
-                raise RuntimeError(f"Failed to get git diff: {e.stderr}")
-            return result.stdout
+                raise RuntimeError(f"Failed to get git diff: {e.stderr or 'Unknown error'}")
+            return result.stdout or ""
         except FileNotFoundError:
             raise RuntimeError("git command not found. Please ensure git is installed.")
     
@@ -54,6 +60,9 @@ class DiffReader:
                 }
             }
         """
+        if not diff_text:
+            return {}
+        
         files = {}
         current_file = None
         current_chunk = None
