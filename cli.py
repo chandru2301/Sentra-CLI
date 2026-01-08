@@ -10,11 +10,12 @@ from policy_loader import load_policy
 from report import generate_pr_comment
 from console import console
 from banner import print_banner
+from license import get_license_tier, should_enforce_block, get_upgrade_message
 
 from version import __version__
 
 
-def print_pretty(result: dict, rules: list = None):
+def print_pretty(result: dict, rules: list = None, license_tier: str = None, original_decision: str = None):
     """Print human-readable formatted output with enterprise-grade polish.
     
     Uses rich console with Sentra theme for consistent, professional output.
@@ -22,12 +23,20 @@ def print_pretty(result: dict, rules: list = None):
     Args:
         result: The analysis result dictionary
         rules: Optional list of rule results for confidence breakdown
+        license_tier: Optional license tier ("free" or "pro")
+        original_decision: Optional original decision if downgraded
     """
     decision = result["decision"]
     confidence = result["confidence"]
     confidence_pct = int(confidence * 100)
     metadata = result["metadata"]
     reasons = result["reasons"]
+    
+    # Get license tier and original decision from metadata if not provided
+    if license_tier is None:
+        license_tier = metadata.get("license_tier", "free")
+    if original_decision is None:
+        original_decision = metadata.get("original_decision")
     
     # Decision icons and styles (semantic colors)
     icon = {
@@ -125,10 +134,18 @@ def print_pretty(result: dict, rules: list = None):
     }
     result_msg, result_style = result_messages.get(decision, ("Unknown", "muted"))
     
+    # Check if decision was downgraded due to Free tier
+    original_decision = result.get("metadata", {}).get("original_decision")
+    license_tier = result.get("metadata", {}).get("license_tier", "free")
+    
     console.print("─" * 40, style="muted")
     console.print(f"Result: {result_msg}", style=result_style)
     if decision == "BLOCK":
         console.print("Policy requires manual review", style="muted")
+    elif original_decision == "BLOCK" and decision == "WARN":
+        # Show upgrade message for Free tier users
+        from license import get_upgrade_message
+        console.print(get_upgrade_message(), style="muted")
     console.print(f"CI output: sentra scan --json", style="muted")
     console.print()
 
@@ -227,6 +244,15 @@ def main():
                 metadata=metadata_for_policy
             )
             
+            # Apply license tier enforcement (Free tier downgrades BLOCK to WARN)
+            license_tier = get_license_tier()
+            original_decision = decision
+            if decision == "BLOCK" and not should_enforce_block(license_tier):
+                # Free tier: downgrade BLOCK to WARN
+                decision = "WARN"
+                # Adjust confidence slightly for downgraded decision
+                confidence = min(confidence, 0.75)
+            
             # Build JSON output
             # Always ensure reasons is an array, never null or omitted
             triggered_rules = [r for r in result["rules"] if r.get("triggered", False)]
@@ -262,6 +288,8 @@ def main():
                     "affected_areas": result["affected_areas"],
                     "base_branch": result["base_branch"],
                     "ai_escalation": "enabled" if result.get("ai_escalation_enabled", False) else "disabled",
+                    "license_tier": license_tier,
+                    "original_decision": original_decision if original_decision != decision else None,
                     **policy_metadata
                 }
             }
@@ -277,7 +305,9 @@ def main():
                     confidence=confidence,
                     reasons=reasons,
                     metadata=output["metadata"],
-                    confidence_breakdown=confidence_factors
+                    confidence_breakdown=confidence_factors,
+                    license_tier=license_tier,
+                    original_decision=original_decision if original_decision != decision else None
                 )
                 # Use plain print for PR comments (markdown, no colors)
                 print(pr_comment)
@@ -288,10 +318,12 @@ def main():
             else:
                 # Human-readable format with confidence breakdown
                 # rich console respects NO_COLOR environment variable automatically
-                print_pretty(output, rules=result["rules"])
+                print_pretty(output, rules=result["rules"], license_tier=license_tier, original_decision=original_decision if original_decision != decision else None)
             
             # Exit code based on decision: BLOCK = 1, ALLOW/WARN = 0
             # This makes Sentra predictable for enterprises
+            # Free tier: BLOCK is downgraded to WARN, so exit code is 0
+            # Pro tier: BLOCK remains BLOCK, so exit code is 1
             exit_code = 1 if decision == "BLOCK" else 0
             sys.exit(exit_code)
             
