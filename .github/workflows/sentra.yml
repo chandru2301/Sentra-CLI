@@ -28,18 +28,28 @@ jobs:
 
       - name: Run Sentra scan
         id: sentra
+        continue-on-error: true
         env:
           SENTRA_LICENSE_KEY: ${{ secrets.SENTRA_LICENSE_KEY }}
         run: |
-          sentra scan --json > sentra-result.json
+          # Run sentra and capture output even if it exits with error
+          sentra scan --json > sentra-result.json 2>&1 || true
           cat sentra-result.json
 
       - name: Enforce Sentra decision
         run: |
+          # Check if output file exists
+          if [ ! -f sentra-result.json ]; then
+            echo "❌ Sentra scan failed to produce output"
+            exit 1
+          fi
+
+          # Extract decision from JSON
           DECISION=$(jq -r '.decision' sentra-result.json)
 
           echo "Sentra decision: $DECISION"
 
+          # Fail CI if BLOCK decision
           if [ "$DECISION" = "BLOCK" ]; then
             echo "❌ Sentra blocked this change"
             exit 1
